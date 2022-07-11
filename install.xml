@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>autologin</name>                
+  <code>autologin</code>                
+  <version>1.0</version>           
+  <author>vvvdata</author>           
+  <link>https://vvvdata.ru</link>  
+ 
+<file path="system/library/session/db.php">  
+  <operation>
+    <search>                           
+      <![CDATA[
+        $this->maxlifetime = ini_get('session.gc_maxlifetime') !== null ? (int)ini_get('session.gc_maxlifetime') : 1440;
+      ]]>
+    </search>
+    <add position="replace">             
+      <![CDATA[
+        // get time life cookie
+		$this->maxlifetime = 1800; // min 30 minutes
+		$query_maxlifetime = $this->db->query("SELECT value FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND `key` = 'module_autologin_session'");
+		if ($query_maxlifetime->num_rows && isset($query_maxlifetime->row['value']) && $query_maxlifetime->row['value'] > $this->maxlifetime) $this->maxlifetime = $query_maxlifetime->row['value'];
+      ]]>
+    </add>
+  </operation>
+  
+  <operation>
+    <search>                           
+      <![CDATA[
+      if ($session_id)
+      ]]>
+    </search>
+    <add position="replace">             
+      <![CDATA[
+      if ($session_id && (count($_COOKIE) > 0))
+      ]]>
+    </add>
+  </operation>
+</file>
+<file path="catalog/controller/startup/session.php">
+  <operation>
+    <search>                          
+      <![CDATA[
+        $this->session->start($session_id);
+      ]]>
+    </search>
+    <add position="before">             
+      <![CDATA[
+        // get time life cookie
+			$time_life_cookie = 1800; // 30 минут не менее, чтобы не поставили 1 секунду, а потом не смогут войти
+			if($session_id){
+      $query_time = $this->db->query("SELECT value FROM " . 
+			DB_PREFIX . "setting WHERE store_id = '0' AND `key` = 'module_autologin_session'");
+		    if ($query_time->num_rows && isset($query_time->row['value']) && $query_time->row['value']> $time_life_cookie) $time_life_cookie = $query_time->row['value'];
+      }
+      ]]>
+    </add>
+  </operation>
+  
+  <operation>
+    <search>                           
+      <![CDATA[ini_get('session.cookie_lifetime')]]>
+    </search>
+    <add position="replace">             
+      <![CDATA[time() + $time_life_cookie]]>
+    </add>
+  </operation>
+</file>
+<file path="system/framework.php">
+  <operation>
+    <search>                          
+      <![CDATA[
+        $session->start($session_id);
+      ]]>
+    </search>
+    <add position="before">             
+      <![CDATA[
+      $time_life_cookie = 1800; // 30 минут не менее, чтобы не поставили 1 секунду, а потом не смогут войти
+	    if($session_id && $config->get('db_autostart')){
+	    $query_tm = $db->query("SELECT value FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND `key` = 'module_autologin_session'");
+	    if ($query_tm->num_rows && isset($query_tm->row['value']) && $query_tm->row['value']> $time_life_cookie) 
+	    $time_life_cookie = $query_tm->row['value'];
+	    }
+      ]]>
+    </add>
+  </operation>
+  
+  <operation>
+    <search>                           
+      <![CDATA[ini_get('session.cookie_lifetime')]]>
+    </search>
+    <add position="replace">             
+      <![CDATA[time() + $time_life_cookie]]>
+    </add>
+  </operation>
+</file>
+</modification>
