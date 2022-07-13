@@ -17,8 +17,17 @@
       <![CDATA[
         // get time life cookie
 		$this->maxlifetime = 1800; // min 30 minutes
-		$query_maxlifetime = $this->db->query("SELECT value FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND `key` = 'module_autologin_session'");
-		if ($query_maxlifetime->num_rows && isset($query_maxlifetime->row['value']) && $query_maxlifetime->row['value'] > $this->maxlifetime) $this->maxlifetime = $query_maxlifetime->row['value'];
+		$status = false;
+		$query_maxlifetime = $this->db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
+		if ($query_maxlifetime->num_rows){        
+			foreach($query_maxlifetime->rows as $mft){
+			if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $this->maxlifetime)
+			$this->maxlifetime = (int)$mft['value'];
+			if($mft['key'] == 'module_autologin_status' && $mft['value']) 
+			   $status = true;
+            }		
+	    }
+		if(!$status)$this->maxlifetime = 1440;
       ]]>
     </add>
   </operation>
@@ -45,13 +54,21 @@
     </search>
     <add position="before">             
       <![CDATA[
-        // get time life cookie
-			$time_life_cookie = 1800; // 30 минут не менее, чтобы не поставили 1 секунду, а потом не смогут войти
-			if($session_id){
-      $query_time = $this->db->query("SELECT value FROM " . 
-			DB_PREFIX . "setting WHERE store_id = '0' AND `key` = 'module_autologin_session'");
-		    if ($query_time->num_rows && isset($query_time->row['value']) && $query_time->row['value']> $time_life_cookie) $time_life_cookie = $query_time->row['value'];
-      }
+    // get time life cookie
+    $maxlifetime = 1800; // min 30 minutes
+    $status = false;
+    $query_maxlifetime = $this->db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
+    if ($query_maxlifetime->num_rows){        
+	  foreach($query_maxlifetime->rows as $mft){
+	  if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $maxlifetime)
+	  $maxlifetime = (int)$mft['value'];
+	  if($mft['key'] == 'module_autologin_status' && $mft['value']) 
+	   $status = true;
+	   }		
+    }
+    if($status)$maxlifetime += time();
+     else 
+    $maxlifetime = 0;
       ]]>
     </add>
   </operation>
@@ -61,7 +78,7 @@
       <![CDATA[ini_get('session.cookie_lifetime')]]>
     </search>
     <add position="replace">             
-      <![CDATA[time() + $time_life_cookie]]>
+      <![CDATA[$maxlifetime]]>
     </add>
   </operation>
 </file>
@@ -74,12 +91,21 @@
     </search>
     <add position="before">             
       <![CDATA[
-      $time_life_cookie = 1800; // 30 минут не менее, чтобы не поставили 1 секунду, а потом не смогут войти
-	    if($session_id && $config->get('db_autostart')){
-	    $query_tm = $db->query("SELECT value FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND `key` = 'module_autologin_session'");
-	    if ($query_tm->num_rows && isset($query_tm->row['value']) && $query_tm->row['value']> $time_life_cookie) 
-	    $time_life_cookie = $query_tm->row['value'];
-	    }
+      // get time life cookie
+    $maxlifetime = 1800; // min 30 minutes
+    $status = false;
+    $query_maxlifetime = $db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
+    if ($query_maxlifetime->num_rows){        
+	  foreach($query_maxlifetime->rows as $mft){
+	  if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $maxlifetime)
+	  $maxlifetime = (int)$mft['value'];
+	  if($mft['key'] == 'module_autologin_status' && $mft['value']) 
+	   $status = true;
+	   }		
+    }
+    if($status)$maxlifetime += time();
+     else 
+    $maxlifetime = 0;
       ]]>
     </add>
   </operation>
@@ -89,7 +115,41 @@
       <![CDATA[ini_get('session.cookie_lifetime')]]>
     </search>
     <add position="replace">             
-      <![CDATA[time() + $time_life_cookie]]>
+      <![CDATA[$maxlifetime]]>
+    </add>
+  </operation>
+</file>
+
+<file path="system/library/cart/cart.php">
+  <operation  error="skip">
+    <search>                          
+      <![CDATA[$this->weight = $registry->get('weight');]]>
+    </search>
+    <add position="after">             
+      <![CDATA[
+      // get time life
+		  $maxlifetime = 1; // min 1 HOUR
+		  $status = false;
+		  $query_maxlifetime = $this->db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
+		  if ($query_maxlifetime->num_rows){        
+			foreach($query_maxlifetime->rows as $mft){
+			if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $maxlifetime)
+			$maxlifetime = (int)$mft['value'];
+			if($mft['key'] == 'module_autologin_status' && $mft['value']) 
+			 $status = true;
+			 }		
+		  }
+		  if(!$status)$maxlifetime = 1;
+      ]]>
+    </add>
+  </operation>
+  
+  <operation  error="skip">
+    <search>                           
+      <![CDATA[INTERVAL 1 HOUR]]>
+    </search>
+    <add position="replace">             
+      <![CDATA[INTERVAL $maxlifetime HOUR]]>
     </add>
   </operation>
 </file>
