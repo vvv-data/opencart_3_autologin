@@ -6,6 +6,23 @@
   <author>vvvdata</author>           
   <link>https://vvvdata.ru</link>  
  
+<file path="system/library/session.php">  
+  <operation>
+    <search>                           
+      <![CDATA[
+      public function destroy()
+      ]]>
+    </search>
+    <add position="before">             
+      <![CDATA[
+    public function maxlifetime() {
+		return $this->adaptor->maxlifetime_other;
+	  }
+      ]]>
+    </add>
+  </operation>    
+</file>
+
 <file path="system/library/session/db.php">  
   <operation>
     <search>                           
@@ -13,25 +30,38 @@
         $this->maxlifetime = ini_get('session.gc_maxlifetime') !== null ? (int)ini_get('session.gc_maxlifetime') : 1440;
       ]]>
     </search>
-    <add position="replace">             
+    <add position="after">             
       <![CDATA[
-        // get time life cookie
-		$this->maxlifetime = 1800; // min 30 minutes
-		$status = false;
+		$status = false; $maxlifetime = 1800; // min 30 minutes
 		$query_maxlifetime = $this->db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
 		if ($query_maxlifetime->num_rows){        
-			foreach($query_maxlifetime->rows as $mft){
-			if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $this->maxlifetime)
-			$this->maxlifetime = (int)$mft['value'];
-			if($mft['key'] == 'module_autologin_status' && $mft['value']) 
-			   $status = true;
-            }		
-	    }
-		if(!$status)$this->maxlifetime = 1440;
+			foreach($query_maxlifetime->rows as $mlt){
+			if($mlt['key'] == 'module_autologin_session' && (int)$mlt['value'] > $maxlifetime)
+			$maxlifetime = (int)$mlt['value'];
+			if($mlt['key'] == 'module_autologin_status' && $mlt['value']) 
+			   $status = true;            
+			}		
+	  }
+		if($status){
+				$this->maxlifetime = $maxlifetime  + time();
+				$this->maxlifetime_other = $this->maxlifetime;
+			}
+      else $this->maxlifetime = (int)$this->maxlifetime + time(); 
+      ]]>
+    </add>
+  </operation>  
+  <operation>
+    <search>                           
+      <![CDATA[
+      public $maxlifetime;
+      ]]>
+    </search>
+    <add position="after">             
+      <![CDATA[
+      public $maxlifetime_other = 0;
       ]]>
     </add>
   </operation>
-  
   <operation>
     <search>                           
       <![CDATA[
@@ -44,7 +74,16 @@
       ]]>
     </add>
   </operation>
+  <operation>
+    <search>                           
+      <![CDATA[time() + (int)$this->maxlifetime]]>
+    </search>
+    <add position="replace">             
+      <![CDATA[$this->maxlifetime]]>
+    </add>
+  </operation>
 </file>
+
 <file path="catalog/controller/startup/session.php">
   <operation>
     <search>                          
@@ -54,25 +93,10 @@
     </search>
     <add position="before">             
       <![CDATA[
-    // get time life cookie
-    $maxlifetime = 1800; // min 30 minutes
-    $status = false;
-    $query_maxlifetime = $this->db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
-    if ($query_maxlifetime->num_rows){        
-	  foreach($query_maxlifetime->rows as $mft){
-	  if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $maxlifetime)
-	  $maxlifetime = (int)$mft['value'];
-	  if($mft['key'] == 'module_autologin_status' && $mft['value']) 
-	   $status = true;
-	   }		
-    }
-    if($status)$maxlifetime += time();
-     else 
-    $maxlifetime = 0;
+    $maxlifetime = $this->session->maxlifetime();
       ]]>
     </add>
-  </operation>
-  
+  </operation> 
   <operation>
     <search>                           
       <![CDATA[ini_get('session.cookie_lifetime')]]>
@@ -82,6 +106,7 @@
     </add>
   </operation>
 </file>
+
 <file path="system/framework.php">
   <operation>
     <search>                          
@@ -91,25 +116,10 @@
     </search>
     <add position="before">             
       <![CDATA[
-      // get time life cookie
-    $maxlifetime = 1800; // min 30 minutes
-    $status = false;
-    $query_maxlifetime = $db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
-    if ($query_maxlifetime->num_rows){        
-	  foreach($query_maxlifetime->rows as $mft){
-	  if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $maxlifetime)
-	  $maxlifetime = (int)$mft['value'];
-	  if($mft['key'] == 'module_autologin_status' && $mft['value']) 
-	   $status = true;
-	   }		
-    }
-    if($status)$maxlifetime += time();
-     else 
-    $maxlifetime = 0;
+      $maxlifetime = $session->maxlifetime();
       ]]>
     </add>
-  </operation>
-  
+  </operation>  
   <operation>
     <search>                           
       <![CDATA[ini_get('session.cookie_lifetime')]]>
@@ -123,23 +133,23 @@
 <file path="system/library/cart/cart.php">
   <operation  error="skip">
     <search>                          
-      <![CDATA[$this->weight = $registry->get('weight');]]>
+      <![CDATA[
+      $this->weight = $registry->get('weight');
+      ]]>
     </search>
     <add position="after">             
       <![CDATA[
-      // get time life
-		  $maxlifetime = 1; // min 1 HOUR
-		  $status = false;
-		  $query_maxlifetime = $this->db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_session' OR  `key` = 'module_autologin_status')");
-		  if ($query_maxlifetime->num_rows){        
-			foreach($query_maxlifetime->rows as $mft){
-			if($mft['key'] == 'module_autologin_session' && (int)$mft['value'] > $maxlifetime)
-			$maxlifetime = (int)$mft['value'];
-			if($mft['key'] == 'module_autologin_status' && $mft['value']) 
-			 $status = true;
-			 }		
-		  }
-		  if(!$status)$maxlifetime = 1;
+    $status = false; $maxlifetime = 1; // min 1 HOUR
+		$query_maxlifetime = $this->db->query("SELECT * FROM " . DB_PREFIX . "setting WHERE store_id = '0' AND (`key` = 'module_autologin_cart' OR  `key` = 'module_autologin_status')");
+		if ($query_maxlifetime->num_rows){        
+		  foreach($query_maxlifetime->rows as $mlt){
+		  if($mlt['key'] == 'module_autologin_cart' && (int)$mlt['value'] > $maxlifetime)
+		  $maxlifetime = (int)$mlt['value'];
+		  if($mlt['key'] == 'module_autologin_status' && $mlt['value']) 
+		   $status = true;
+		  }		
+		}
+		if(!$status)$maxlifetime = 1;
       ]]>
     </add>
   </operation>
