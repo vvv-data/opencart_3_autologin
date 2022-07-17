@@ -5,21 +5,21 @@ class ControllerExtensionModuleAutologin extends Controller {
    
 	  
 	  $this->load->model('extension/module/autologin');
+
+	  $data = array();
+	  $data = $this->load->language('extension/module/autologin');
    
 	  
 	  if (($this->request->server['REQUEST_METHOD'] == 'POST')) {
 		
 		$this->model_extension_module_autologin->SaveSettings();
 		
-		$this->session->data['success'] = 'Настройки сохранены';
+		$this->session->data['success'] = $data['text_success'];
 		$this->response->redirect($this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=module', true));
 	  }
    
 	  // Загружаем настройки через метод "модели"
-	  $data = array();
-      $data = $this->model_extension_module_autologin->LoadSettings();
-	  
-	  $data += $this->load->language('extension/module/autologin');
+	  $data += $this->model_extension_module_autologin->LoadSettings();	  
 	  
 	  $data += $this->GetBreadCrumbs();
    
