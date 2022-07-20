@@ -1,4 +1,4 @@
-# opencart_3_autologin
+# Opencart 3.x session time change
 The plugin allows you to set the lifetime of the session, edited in the admin panel in seconds.
 With each visit, the session validity period is extended again.
 You can also add a cart lifetime for an unregistered user
