@@ -3,7 +3,7 @@ The plugin allows you to set the lifetime of the session, edited in the admin pa
 With each visit, the session validity period is extended again.
 You can also add a cart lifetime for an unregistered user
 
-#Модуль позволяет настраивать продолжительность сессии. 
+# Модуль позволяет настраивать продолжительность сессии. 
 По умолчанию продолжительность сессии в opencart прерывается после закрытия браузера. Если покупатель не залогинился, и добавил товары в корзину или закладки, то они  обнулятся после закрытия браузера. 
 С помощью этого модуля можно увеличить продолжительность сессии, указав его в секундах в панели администратора модуля. 
 
