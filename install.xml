@@ -3,7 +3,7 @@
   <name>autologin</name>                
   <code>autologin</code>                
   <version>1.0</version>           
-  <author>vvvdata</author>           
+  <author>vvv-data</author>           
   <link>https://vvvdata.ru</link>  
  
 <file path="system/library/session.php">  

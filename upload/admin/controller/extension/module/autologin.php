@@ -1,4 +1,9 @@
 <?php
+/*
+@author vvv-data
+@link   https://vvvdata.ru
+*/
+
 class ControllerExtensionModuleAutologin extends Controller {
  
 	public function index() {

@@ -1,4 +1,9 @@
 <?php
+/*
+@author vvv-data
+@link   https://vvvdata.ru
+*/
+
 class ModelExtensionModuleAutologin extends Model {
  
 
